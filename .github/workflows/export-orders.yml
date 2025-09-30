@@ -1,4 +1,6 @@
 name: Weekly Orders Export
+permissions:
+  contents: read
 
 on:
   repository_dispatch:
