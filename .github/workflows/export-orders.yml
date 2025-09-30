@@ -1,10 +1,9 @@
 name: Weekly Orders Export
 
 on:
-  schedule:
-    # Runs every Monday at 9 AM UTC
-    - cron: '0 9 * * 1'
-  workflow_dispatch: # Allows manual trigger
+  repository_dispatch:
+    types: [export_orders]
+  workflow_dispatch: # Manual trigger from GitHub UI
 
 jobs:
   export:
@@ -24,10 +23,3 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           BUSINESS_SLUG: ${{ secrets.BUSINESS_SLUG }}
         run: node export-orders.js
-      
-      - name: Upload CSV artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: weekly-orders
-          path: '*.csv'
-          retention-days: 30
