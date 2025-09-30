@@ -100,12 +100,19 @@ async function main() {
     
     console.log('=== Ordering.co Weekly Export ===');
     console.log(`Date Range: ${lastMonday.toDateString()} to ${lastSunday.toDateString()}`);
+    console.log(`Start: ${formatDate(lastMonday)}`);
+    console.log(`End: ${formatDate(lastSunday)}`);
     
     const url = buildURL(lastMonday, lastSunday);
+    console.log(`API URL: https://apiv4.ordering.co${url}`);
+    
     const filename = `orders_${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}_to_${lastSunday.getFullYear()}-${String(lastSunday.getMonth() + 1).padStart(2, '0')}-${String(lastSunday.getDate()).padStart(2, '0')}.csv`;
     
     console.log('Downloading orders...');
     await downloadCSV(url, filename);
+    
+    const stats = fs.statSync(filename);
+    console.log(`File size: ${stats.size} bytes`);
     
     console.log(`✓ Success! Orders exported to: ${filename}`);
     
