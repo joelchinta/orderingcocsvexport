@@ -65,7 +65,7 @@ function buildURL(startDate, endDate) {
     },
     {
       "attribute": "status",
-      "value": [11]
+      "value": [11 1]
     }
   ];
   
