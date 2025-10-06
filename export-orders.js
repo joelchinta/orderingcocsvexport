@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  * Ordering.co Weekly Orders Export
  * Exports orders from last week (Monday to Sunday)
@@ -7,23 +6,24 @@
  * Usage:
  *   API_KEY=your_key BUSINESS_SLUG=your_slug node export-orders.js
  */
-
 const https = require('https');
 const fs = require('fs');
-
 const BUSINESS_SLUG = process.env.BUSINESS_SLUG;
 const API_KEY = process.env.API_KEY;
-
 if (!API_KEY || !BUSINESS_SLUG) {
   console.error('Error: API_KEY and BUSINESS_SLUG are required');
   console.error('Usage: API_KEY=your_key BUSINESS_SLUG=your_slug node export-orders.js');
   process.exit(1);
 }
-
 function getLastWeekRange() {
   const today = new Date();
   const dayOfWeek = today.getDay();
-  const daysToLastMonday = dayOfWeek === 0 ? 8 : dayOfWeek + 6;
+  
+  // Fixed calculation: go back to last week's Monday
+  // If today is Sunday (0), go back 6 days to last Monday
+  // If today is Monday (1), go back 7 days to last Monday
+  // If today is Tuesday (2), go back 8 days to last Monday, etc.
+  const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek + 6;
   
   const lastMonday = new Date(today);
   lastMonday.setDate(today.getDate() - daysToLastMonday);
@@ -35,7 +35,6 @@ function getLastWeekRange() {
   
   return { lastMonday, lastSunday };
 }
-
 function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -46,7 +45,6 @@ function formatDate(date) {
   
   return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
 }
-
 function buildURL(startDate, endDate) {
   const where = [
     {
@@ -71,7 +69,6 @@ function buildURL(startDate, endDate) {
   
   return `/v400/en/${BUSINESS_SLUG}/orders.csv?mode=dashboard&where=${encodeURIComponent(JSON.stringify(where))}&orderBy=id`;
 }
-
 function downloadCSV(url, filename) {
   return new Promise((resolve, reject) => {
     https.get({
@@ -97,7 +94,6 @@ function downloadCSV(url, filename) {
     }).on('error', reject);
   });
 }
-
 async function main() {
   try {
     const { lastMonday, lastSunday } = getLastWeekRange();
@@ -125,5 +121,4 @@ async function main() {
     process.exit(1);
   }
 }
-
 main();
