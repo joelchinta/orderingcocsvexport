@@ -122,7 +122,8 @@ for (const success of [true, false]) {
     else await assert.rejects(queueExport(...args), /uncertain/);
     assert.equal(JSON.parse(await fs.readFile(receipt)).status, success ? 'queued' : 'pending');
     assert.deepEqual(Object.keys(JSON.parse(await fs.readFile(receipt))), ['status']);
-    await assert.rejects(queueExport(...args));
+    if (success) assert.deepEqual(await queueExport(...args), { alreadyQueued: true });
+    else await assert.rejects(queueExport(...args), /uncertain/);
     assert.equal(calls, 1);
     assert.equal((await fs.stat(receipt)).mode & 0o777, 0o600);
   });

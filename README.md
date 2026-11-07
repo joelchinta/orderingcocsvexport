@@ -54,7 +54,8 @@ to the login, server-action transport or response shape may require maintenance.
 Only after approving the actual report email, add `--send-email`. That sends one
 POST with all matching batch IDs. No email request is made for an empty range.
 The runner reserves a local receipt before sending; a pending or successful
-receipt blocks a repeat of the same plan. Timeouts are never retried automatically.
+receipt blocks a repeat of the same plan. Already queued reports exit successfully
+without another email; pending receipts still require review. Timeouts are never retried automatically.
 Receipts must be retained between runs. GitHub's receipt cache is best-effort
 and can expire; it is not a server-side idempotency guarantee.
 

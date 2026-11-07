@@ -183,7 +183,14 @@ function selectedMerchant(element) {
 
 async function queueExport(request, batches, receiptFile, merchant, range) {
   // Reserve before sending. A timeout may still mean the email was queued; never retry automatically.
-  await privateJSON(receiptFile, { status: 'pending' }, true);
+  try {
+    await privateJSON(receiptFile, { status: 'pending' }, true);
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const previous = JSON.parse(await fs.readFile(receiptFile, 'utf8'));
+    if (previous.status === 'queued') return { alreadyQueued: true };
+    throw new Error('Email queue result is uncertain. Existing pending receipt requires review before retrying');
+  }
   const url = new URL('/api/settlements/export', ORIGIN);
   url.searchParams.set('batch_ids', batches.map(batch => batch.id).join(','));
   try {
@@ -197,6 +204,7 @@ async function queueExport(request, batches, receiptFile, merchant, range) {
     const result = await response.json();
     if (result.status !== 1) throw new Error('Export request was not confirmed');
     await privateJSON(receiptFile, { status: 'queued' });
+    return { alreadyQueued: false };
   } catch {
     throw new Error('Email queue result is uncertain. Check the portal/inbox before removing the pending receipt and retrying');
   }
@@ -250,7 +258,8 @@ async function main() {
     if (!options['send-email']) { console.log('Preview only. No report email requested.'); return; }
     if (!batches.length) { console.log('No matching batches; no email requested.'); return; }
     const key = crypto.createHash('sha256').update(JSON.stringify({ merchant, range, batches })).digest('hex');
-    await queueExport(context.request, batches, path.join(options['output-dir'], 'receipts', `${key}.json`), merchant, range);
+    const queued = await queueExport(context.request, batches, path.join(options['output-dir'], 'receipts', `${key}.json`), merchant, range);
+    if (queued.alreadyQueued) { console.log('This report was already queued. No duplicate email requested.'); return; }
     console.log('Report email queued. This is not confirmation of email delivery or workbook import.');
   } finally { await browser.close(); }
 }
