@@ -135,6 +135,13 @@ async function authenticate(page, options, env) {
       if (!env.GOMAMAM_EMAIL || !env.GOMAMAM_PASSWORD) {
         throw new Error('Sign-in required: use --login locally, or configure GOMAMAM_EMAIL and GOMAMAM_PASSWORD securely');
       }
+      // The server-rendered form can appear before its client-side submit handler is ready.
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      let loginStatus = null;
+      const observeLogin = response => {
+        if (new URL(response.url()).hostname === 'auth.gomamam.com' && response.request().method() === 'POST') loginStatus = response.status();
+      };
+      page.on('response', observeLogin);
       await page.getByRole('textbox', { name: /Email address/i }).fill(env.GOMAMAM_EMAIL);
       await page.getByLabel(/^Password/i).fill(env.GOMAMAM_PASSWORD);
       await page.getByRole('button', { name: 'Login', exact: true }).click();
@@ -146,15 +153,17 @@ async function authenticate(page, options, env) {
         const current = new URL(page.url());
         const text = (await page.locator('body').innerText()).toLowerCase();
         let reason = 'login did not reach the merchant dashboard';
-        if (/invalid credentials|incorrect password|invalid email or password|credentials do not match|email or password is incorrect/.test(text)) reason = 'login credentials were rejected';
+        if (/incorrect|invalid credentials|invalid email|invalid password|credentials do not match|no matching user|user not found/.test(text)) reason = 'login credentials were rejected';
         else if (/captcha|verify you are human|checking your browser/.test(text)) reason = 'human verification is required';
         else if (/verification code|one.time password|enter.*otp/.test(text)) reason = 'a verification code is required';
         else if (current.pathname === '/reload') reason = 'merchant access was not restored after login';
         // Only an allowlisted origin/path and a fixed diagnosis are logged, never page text or URL query strings.
         const location = ['auth.gomamam.com', 'vendor.gomamam.com'].includes(current.hostname)
           ? `${current.hostname}${current.pathname.replace(/[^a-zA-Z0-9/_-]/g, '').slice(0, 80)}` : 'another sign-in destination';
-        throw new Error(`Sign-in stopped at ${location}: ${reason}`);
+        const invalidFields = await page.locator('input:invalid').count();
+        throw new Error(`Sign-in stopped at ${location}: ${reason}; authentication response ${loginStatus ?? 'not observed'}; invalid fields ${invalidFields}`);
       }
+      finally { page.off('response', observeLogin); }
     }
   }
   await page.getByRole('heading', { name: 'Settlements', exact: true }).waitFor();

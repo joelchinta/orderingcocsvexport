@@ -14,6 +14,8 @@ test('fresh sessions follow recovery before filling login credentials', async ()
   const page = {
     goto: async () => { url = signedIn ? 'https://vendor.gomamam.com/dashboard/settlements' : 'https://vendor.gomamam.com/reload'; },
     url: () => url,
+    waitForLoadState: async () => {},
+    on: () => {}, off: () => {},
     locator: () => ({ first: () => ({ waitFor: async () => {} }), waitFor: async () => {}, evaluate: async () => 'Test merchant' }),
     getByRole: (role, options) => ({
       waitFor: async () => {},
