@@ -142,7 +142,19 @@ async function authenticate(page, options, env) {
         await page.waitForURL(url => url.origin === ORIGIN && url.pathname.startsWith('/dashboard'), { timeout: 60000 });
         await page.goto(SETTLEMENTS, { waitUntil: 'domcontentloaded' });
       }
-      catch { throw new Error('Sign-in did not complete; check credentials or complete OTP/CAPTCHA interactively'); }
+      catch {
+        const current = new URL(page.url());
+        const text = (await page.locator('body').innerText()).toLowerCase();
+        let reason = 'login did not reach the merchant dashboard';
+        if (/invalid credentials|incorrect password|invalid email or password|credentials do not match|email or password is incorrect/.test(text)) reason = 'login credentials were rejected';
+        else if (/captcha|verify you are human|checking your browser/.test(text)) reason = 'human verification is required';
+        else if (/verification code|one.time password|enter.*otp/.test(text)) reason = 'a verification code is required';
+        else if (current.pathname === '/reload') reason = 'merchant access was not restored after login';
+        // Only an allowlisted origin/path and a fixed diagnosis are logged, never page text or URL query strings.
+        const location = ['auth.gomamam.com', 'vendor.gomamam.com'].includes(current.hostname)
+          ? `${current.hostname}${current.pathname.replace(/[^a-zA-Z0-9/_-]/g, '').slice(0, 80)}` : 'another sign-in destination';
+        throw new Error(`Sign-in stopped at ${location}: ${reason}`);
+      }
     }
   }
   await page.getByRole('heading', { name: 'Settlements', exact: true }).waitFor();
