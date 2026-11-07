@@ -1,15 +1,31 @@
-name: Weekly Orders Export
+name: GoMamam Settlement Export
 permissions:
   contents: read
 
 on:
   repository_dispatch:
     types: [export_orders]
-  workflow_dispatch: # Manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'First settlement business date (YYYY-MM-DD); blank means last complete week'
+        type: string
+      to:
+        description: 'Last settlement business date (YYYY-MM-DD)'
+        type: string
+      send_email:
+        description: 'Request the actual report email from GoMamam'
+        type: boolean
+        default: false
+
+concurrency:
+  group: gomamam-settlement-export
+  cancel-in-progress: false
 
 jobs:
   export:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
@@ -19,10 +35,38 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '24'
-          package-manager-cache: false
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+      - name: Restore email request receipts
+        uses: actions/cache/restore@v4
+        with:
+          path: work/gomamam/receipts
+          key: gomamam-receipts-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: gomamam-receipts-
       
       - name: Export orders
         env:
-          API_KEY: ${{ secrets.API_KEY }}
-          BUSINESS_SLUG: ${{ secrets.BUSINESS_SLUG }}
-        run: node export-orders.js
+          GOMAMAM_EMAIL: ${{ secrets.GOMAMAM_EMAIL }}
+          GOMAMAM_PASSWORD: ${{ secrets.GOMAMAM_PASSWORD }}
+          GOMAMAM_MERCHANT: ${{ vars.GOMAMAM_MERCHANT }}
+          RANGE_FROM: ${{ inputs.from }}
+          RANGE_TO: ${{ inputs.to }}
+          SEND_EMAIL: ${{ github.event_name == 'workflow_dispatch' && inputs.send_email }}
+        run: |
+          args=(--merchant "$GOMAMAM_MERCHANT")
+          if [[ -n "$RANGE_FROM" || -n "$RANGE_TO" ]]; then
+            args+=(--from "$RANGE_FROM" --to "$RANGE_TO")
+          fi
+          if [[ "$SEND_EMAIL" == "true" ]]; then args+=(--send-email); fi
+          node gomamam-export.js "${args[@]}"
+
+      - name: Save email request receipts, including uncertain requests
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/gomamam/receipts
+          key: gomamam-receipts-${{ github.run_id }}-${{ github.run_attempt }}

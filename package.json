@@ -1,0 +1,24 @@
+{
+  "name": "orderingcocsvexport",
+  "version": "1.0.0",
+  "description": "GoMamam settlement export with browser login and authenticated requests",
+  "main": "export-orders.js",
+  "scripts": {
+    "test": "node --test test-gomamam-export.js",
+    "preview": "node gomamam-export.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joelchinta/orderingcocsvexport.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/joelchinta/orderingcocsvexport/issues"
+  },
+  "homepage": "https://github.com/joelchinta/orderingcocsvexport#readme",
+  "dependencies": {
+    "playwright": "1.65.0"
+  },
+  "private": true
+}

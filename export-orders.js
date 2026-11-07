@@ -8,6 +8,15 @@
  */
 const https = require('https');
 const fs = require('fs');
+const path = require('path');
+if (process.argv[2] === '--settlement') {
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.env.PYTHON || 'python3', [
+    path.join(__dirname, 'settlement-to-csv.py'), ...process.argv.slice(3)
+  ], { stdio: 'inherit' });
+  if (result.error) console.error('Could not start the settlement converter:', result.error.message);
+  process.exit(result.status === null ? 1 : result.status);
+}
 const BUSINESS_SLUG = process.env.BUSINESS_SLUG;
 const API_KEY = process.env.API_KEY;
 if (!API_KEY || !BUSINESS_SLUG) {
