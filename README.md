@@ -110,8 +110,13 @@ Cursor continuation is covered by synthetic tests; the live account did not
 have a multi-page result. The merchant-selector regression is tested in a real
 headless browser. Nine Node checks and eight workbook-conversion checks passed.
 
-The password-based unattended login path, approved email queue/delivery test,
-and new-workbook email importer remain unverified. Do not describe the entire
+On 8 November, GitHub password-based unattended login and read-only export
+planning passed in run 42396428484. Fresh sessions now follow the expired-session
+page's sign-in link and wait for login form hydration before filling credentials.
+Ten Node checks pass, including the recovery-page regression.
+
+The approved email queue/delivery test and new-workbook email importer remain
+unverified. Do not describe the entire
 email-to-Notion pipeline as complete. The local session was saved with user
 approval, outside Git with owner-only permissions. No account password or GitHub
 secret was changed. During the earlier investigation, one portal settlement
