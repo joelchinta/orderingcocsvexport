@@ -6,7 +6,10 @@ const { spawnSync } = require('node:child_process');
 function run(command, args, code, env = process.env) {
   const result = spawnSync(command, args, { env, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 });
   // Captured output is deliberately neither printed nor uploaded, including failures.
-  if (result.error || result.status !== 0) throw new Error(code);
+  if (result.error || result.status !== 0) {
+    const nested = /Task failed \((E0[0-6])\)\./.exec(String(result.stderr));
+    throw new Error(nested ? nested[1] : code);
+  }
 }
 
 function options(event, name) {
@@ -16,10 +19,11 @@ function options(event, name) {
 }
 
 async function worker() {
-  const cache = require('@actions/cache');
+  const cache = await import('@actions/cache');
   const receipts = 'work/gomamam/receipts';
   const key = `state-v1-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
-  await cache.restoreCache([receipts], key, ['state-v1-', 'gomamam-receipts-']);
+  try { await cache.restoreCache([receipts], key, ['state-v1-', 'gomamam-receipts-']); }
+  catch { throw new Error('E04'); }
   // Preserve existing duplicate protection while removing identifying receipt metadata.
   if (fs.existsSync(receipts)) for (const file of fs.readdirSync(receipts)) {
     if (!/^[a-f0-9]{64}\.json$/.test(file)) throw new Error('Unexpected state file');
@@ -35,11 +39,14 @@ async function worker() {
   if (input.send) args.push('--send-email');
   let failure;
   try {
-    run(process.execPath, args, 'E04', { ...process.env,
+    run(process.execPath, args, 'E05', { ...process.env,
       GOMAMAM_EMAIL: process.env.A, GOMAMAM_PASSWORD: process.env.B, GOMAMAM_MERCHANT: process.env.C });
   } catch (error) { failure = error; }
   finally {
-    if (fs.existsSync(receipts) && fs.readdirSync(receipts).length) await cache.saveCache([receipts], key);
+    if (fs.existsSync(receipts) && fs.readdirSync(receipts).length) {
+      try { await cache.saveCache([receipts], key); }
+      catch { throw new Error('E06'); }
+    }
   }
   if (failure) throw failure;
 }
@@ -55,6 +62,6 @@ async function main() {
 
 module.exports = { run, options };
 if (require.main === module) main().catch(error => {
-  console.error(`Task failed (${/^E0[1-4]$/.test(error.message) ? error.message : 'E00'}).`);
+  console.error(`Task failed (${/^E0[1-6]$/.test(error.message) ? error.message : 'E00'}).`);
   process.exitCode = 1;
 });

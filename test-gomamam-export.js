@@ -6,6 +6,12 @@ const path = require('node:path');
 const { lastWeek, dateOnly, businessDay, decodeFlight, listSettlements, queueExport, discoverAction, selectedMerchant } = require('./gomamam-export');
 const range = { from: '2026-10-26', to: '2026-11-01' };
 
+test('CI state library loads using its supported module interface', async () => {
+  const cache = await import('@actions/cache');
+  assert.equal(typeof cache.restoreCache, 'function');
+  assert.equal(typeof cache.saveCache, 'function');
+});
+
 test('private CI wrapper keeps email defaults and suppresses subprocess details', () => {
   const { run, options } = require('./ci');
   assert.equal(options({}, 'repository_dispatch').send, true);

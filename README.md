@@ -71,7 +71,8 @@ No authenticated state, report workbook, or customer data is uploaded as an arti
 The workflow uses neutral names and a local JavaScript action. Dependency,
 browser, test, cache and task output is captured without being printed or
 uploaded. Public task output is only completion or a fixed failure code:
-E01 (dependency setup), E02 (browser setup), E03 (checks), E04 (task/state).
+E01 (dependency setup), E02 (browser setup), E03 (checks), E04 (state restore),
+E05 (task), E06 (state save).
 Existing receipt caches are restored to preserve duplicate protection, but
 receipt contents are reduced to status only before the next cache save.
 Email-by-default behavior and manual preview selection are preserved.
