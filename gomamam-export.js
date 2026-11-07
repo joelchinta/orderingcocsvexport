@@ -117,6 +117,11 @@ async function discoverAction(page, request) {
 async function authenticate(page, options, env) {
   await page.goto(SETTLEMENTS, { waitUntil: 'domcontentloaded' });
   await page.locator('h1, input[type="password"]').first().waitFor();
+  if (new URL(page.url()).origin === ORIGIN && new URL(page.url()).pathname === '/reload') {
+    const signIn = page.getByRole('link', { name: 'Sign in again', exact: true });
+    await signIn.click();
+    await page.locator('input[type="password"]').waitFor();
+  }
   const onPortal = () => new URL(page.url()).origin === ORIGIN && new URL(page.url()).pathname === '/dashboard/settlements';
   if (!onPortal()) {
     if (!['auth.gomamam.com', 'vendor.gomamam.com'].includes(new URL(page.url()).hostname)) {
@@ -229,7 +234,7 @@ async function main() {
   } finally { await browser.close(); }
 }
 
-module.exports = { lastWeek, dateOnly, businessDay, decodeFlight, listSettlements, queueExport, discoverAction, selectedMerchant };
+module.exports = { lastWeek, dateOnly, businessDay, decodeFlight, listSettlements, queueExport, discoverAction, selectedMerchant, authenticate };
 if (require.main === module) main().catch(error => {
   // Never print request bodies, cookies, page HTML, passwords or login error traces.
   console.error(error.message.startsWith('page.') || error.message.includes('Call log:') ? 'Browser operation failed; check sign-in and portal availability' : error.message);

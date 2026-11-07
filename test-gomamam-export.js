@@ -6,6 +6,34 @@ const path = require('node:path');
 const { lastWeek, dateOnly, businessDay, decodeFlight, listSettlements, queueExport, discoverAction, selectedMerchant } = require('./gomamam-export');
 const range = { from: '2026-10-26', to: '2026-11-01' };
 
+test('fresh sessions follow recovery before filling login credentials', async () => {
+  const { authenticate } = require('./gomamam-export');
+  let url = 'https://vendor.gomamam.com/reload';
+  let signedIn = false;
+  const actions = [];
+  const page = {
+    goto: async () => { url = signedIn ? 'https://vendor.gomamam.com/dashboard/settlements' : 'https://vendor.gomamam.com/reload'; },
+    url: () => url,
+    locator: () => ({ first: () => ({ waitFor: async () => {} }), waitFor: async () => {}, evaluate: async () => 'Test merchant' }),
+    getByRole: (role, options) => ({
+      waitFor: async () => {},
+      fill: async value => actions.push(['email', value]),
+      click: async () => {
+        actions.push(['click', options.name]);
+        if (options.name === 'Sign in again') url = 'https://auth.gomamam.com/login';
+        if (options.name === 'Login') { signedIn = true; url = 'https://vendor.gomamam.com/dashboard'; }
+      }
+    }),
+    getByLabel: () => ({ fill: async value => actions.push(['password', value]) }),
+    waitForURL: async predicate => assert.equal(predicate(new URL(url)), true)
+  };
+  assert.equal(await authenticate(page, { merchant: 'Test merchant' }, {
+    GOMAMAM_EMAIL: 'test@example.invalid', GOMAMAM_PASSWORD: 'synthetic-password'
+  }), 'Test merchant');
+  assert.deepEqual(actions, [['click', 'Sign in again'], ['email', 'test@example.invalid'],
+    ['password', 'synthetic-password'], ['click', 'Login']]);
+});
+
 test('reads React Select merchant label in a real browser', async () => {
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
