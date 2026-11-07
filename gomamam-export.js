@@ -256,7 +256,7 @@ async function main() {
     await privateJSON(path.join(options['output-dir'], 'plan.json'), plan);
     console.log(`${range.from} to ${range.to}: ${batches.length} settlement batches across ${pagesRead} pages`);
     if (!options['send-email']) { console.log('Preview only. No report email requested.'); return; }
-    if (!batches.length) { console.log('No matching batches; no email requested.'); return; }
+    if (!batches.length) throw new Error('No matching batches; a report email could not be requested');
     const key = crypto.createHash('sha256').update(JSON.stringify({ merchant, range, batches })).digest('hex');
     const queued = await queueExport(context.request, batches, path.join(options['output-dir'], 'receipts', `${key}.json`), merchant, range);
     if (queued.alreadyQueued) { console.log('This report was already queued. No duplicate email requested.'); return; }

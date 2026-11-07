@@ -14,10 +14,6 @@ on:
       to:
         description: 'End (optional, YYYY-MM-DD)'
         type: string
-      send_email:
-        description: 'Apply changes (unchecked: preview)'
-        type: boolean
-        default: true
 
 concurrency:
   group: configured-task

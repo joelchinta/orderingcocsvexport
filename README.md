@@ -51,17 +51,16 @@ repeated cursors, changed response schemas, and an unexpected selected merchant.
 This is a private portal interface, not a documented GoMamam public API; changes
 to the login, server-action transport or response shape may require maintenance.
 
-Only after approving the actual report email, add `--send-email`. That sends one
-POST with all matching batch IDs. No email request is made for an empty range.
-The runner reserves a local receipt before sending; a pending or successful
-receipt blocks a repeat of the same plan. Already queued reports exit successfully
-without another email; pending receipts still require review. Timeouts are never retried automatically.
-Receipts must be retained between runs. GitHub's receipt cache is best-effort
-and can expire; it is not a server-side idempotency guarantee.
+The command-line runner requires `--send-email` to request an email. It keeps
+local receipts to avoid accidental retries within the same output directory.
 
-The workflow accepts `repository_dispatch: export_orders` and requests the report
-email by default. Manual workflow runs also default `send_email` to true; untick
-the checkbox for a preview. The command-line runner still requires `--send-email`.
+Every GitHub workflow invocation now requests a fresh email, including manual
+reruns for the same dates. The preview checkbox and cross-run receipt cache have
+been removed. Each run/attempt uses an independent receipt directory, so earlier
+reports never suppress a new workflow request. An empty date range fails instead
+of reporting success without a request. An uncertain request is not retried inside
+that invocation; a new workflow invocation is an explicit new request.
+
 Before use, configure GitHub secrets `GOMAMAM_EMAIL`, `GOMAMAM_PASSWORD`, and
 the secret `GOMAMAM_MERCHANT`. The merchant label was migrated from the existing
 variable to a masked secret when public-log minimization was requested.
@@ -70,13 +69,10 @@ No authenticated state, report workbook, or customer data is uploaded as an arti
 ### Public-log minimization
 
 The workflow uses neutral names and a local JavaScript action. Dependency,
-browser, test, cache and task output is captured without being printed or
+browser, test and task output is captured without being printed or
 uploaded. Public task output is only completion or a fixed failure code:
-E01 (dependency setup), E02 (browser setup), E03 (checks), E04 (state restore),
-E05 (task), E06 (state save).
-Existing receipt caches are restored to preserve duplicate protection, but
-receipt contents are reduced to status only before the next cache save.
-Email-by-default behavior and manual preview selection are preserved.
+E01 (dependency setup), E02 (browser setup), E03 (checks), E05 (task).
+Every workflow run requests an email. No receipt cache is restored or uploaded.
 
 This does not anonymize a public repository: GitHub still exposes its owner,
 triggering actor, source, commit history and platform-generated checkout/runtime
