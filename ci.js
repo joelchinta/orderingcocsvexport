@@ -53,9 +53,11 @@ async function worker() {
 
 async function main() {
   if (process.argv.includes('--worker')) return worker();
-  run('npm', ['ci', '--no-fund', '--no-audit'], 'E01');
-  run('npx', ['playwright', 'install', '--with-deps', 'chromium'], 'E02');
-  run('npm', ['test'], 'E03');
+  const setupEnv = { ...process.env };
+  for (const key of ['A', 'B', 'C', 'GOMAMAM_EMAIL', 'GOMAMAM_PASSWORD', 'GOMAMAM_MERCHANT', 'ACTIONS_RUNTIME_TOKEN']) delete setupEnv[key];
+  run('npm', ['ci', '--no-fund', '--no-audit'], 'E01', setupEnv);
+  run('npx', ['playwright', 'install', '--with-deps', 'chromium'], 'E02', setupEnv);
+  run('npm', ['test'], 'E03', setupEnv);
   run(process.execPath, [__filename, '--worker'], 'E04');
   console.log('Task completed.');
 }
