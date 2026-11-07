@@ -6,6 +6,14 @@ const path = require('node:path');
 const { lastWeek, dateOnly, businessDay, decodeFlight, listSettlements, queueExport, discoverAction, selectedMerchant } = require('./gomamam-export');
 const range = { from: '2026-10-26', to: '2026-11-01' };
 
+test('private CI wrapper keeps email defaults and suppresses subprocess details', () => {
+  const { run, options } = require('./ci');
+  assert.equal(options({}, 'repository_dispatch').send, true);
+  assert.equal(options({ inputs: { send_email: 'true' } }, 'workflow_dispatch').send, true);
+  assert.equal(options({ inputs: { send_email: 'false' } }, 'workflow_dispatch').send, false);
+  assert.throws(() => run(process.execPath, ['-e', 'console.log("PRIVATE-DATA"); console.error("PRIVATE-DATA"); process.exit(1)'], 'E01'), error => error.message === 'E01');
+});
+
 test('fresh sessions follow recovery before filling login credentials', async () => {
   const { authenticate } = require('./gomamam-export');
   let url = 'https://vendor.gomamam.com/reload';
@@ -107,6 +115,7 @@ for (const success of [true, false]) {
     if (success) await queueExport(...args);
     else await assert.rejects(queueExport(...args), /uncertain/);
     assert.equal(JSON.parse(await fs.readFile(receipt)).status, success ? 'queued' : 'pending');
+    assert.deepEqual(Object.keys(JSON.parse(await fs.readFile(receipt))), ['status']);
     await assert.rejects(queueExport(...args));
     assert.equal(calls, 1);
     assert.equal((await fs.stat(receipt)).mode & 0o777, 0o600);

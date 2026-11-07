@@ -62,8 +62,24 @@ The workflow accepts `repository_dispatch: export_orders` and requests the repor
 email by default. Manual workflow runs also default `send_email` to true; untick
 the checkbox for a preview. The command-line runner still requires `--send-email`.
 Before use, configure GitHub secrets `GOMAMAM_EMAIL`, `GOMAMAM_PASSWORD`, and
-the variable `GOMAMAM_MERCHANT`. Configuration is not performed by this code.
+the secret `GOMAMAM_MERCHANT`. The merchant label was migrated from the existing
+variable to a masked secret when public-log minimization was requested.
 No authenticated state, report workbook, or customer data is uploaded as an artifact.
+
+### Public-log minimization
+
+The workflow uses neutral names and a local JavaScript action. Dependency,
+browser, test, cache and task output is captured without being printed or
+uploaded. Public task output is only completion or a fixed failure code:
+E01 (dependency setup), E02 (browser setup), E03 (checks), E04 (task/state).
+Existing receipt caches are restored to preserve duplicate protection, but
+receipt contents are reduced to status only before the next cache save.
+Email-by-default behavior and manual preview selection are preserved.
+
+This does not anonymize a public repository: GitHub still exposes its owner,
+triggering actor, source, commit history and platform-generated checkout/runtime
+information. Earlier logs and caches are not deleted. Full troubleshooting
+output remains available when running the normal CLI locally.
 
 ## Convert an already downloaded settlement
 

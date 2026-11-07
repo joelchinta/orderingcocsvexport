@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/joelchinta/orderingcocsvexport#readme",
   "dependencies": {
+    "@actions/cache": "6.2.0",
     "playwright": "1.65.0"
   },
   "private": true

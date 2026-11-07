@@ -183,7 +183,7 @@ function selectedMerchant(element) {
 
 async function queueExport(request, batches, receiptFile, merchant, range) {
   // Reserve before sending. A timeout may still mean the email was queued; never retry automatically.
-  await privateJSON(receiptFile, { status: 'pending', merchant, range, batches }, true);
+  await privateJSON(receiptFile, { status: 'pending' }, true);
   const url = new URL('/api/settlements/export', ORIGIN);
   url.searchParams.set('batch_ids', batches.map(batch => batch.id).join(','));
   try {
@@ -196,7 +196,7 @@ async function queueExport(request, batches, receiptFile, merchant, range) {
     }
     const result = await response.json();
     if (result.status !== 1) throw new Error('Export request was not confirmed');
-    await privateJSON(receiptFile, { status: 'queued', merchant, range, batches });
+    await privateJSON(receiptFile, { status: 'queued' });
   } catch {
     throw new Error('Email queue result is uncertain. Check the portal/inbox before removing the pending receipt and retrying');
   }
