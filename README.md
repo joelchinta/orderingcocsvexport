@@ -58,8 +58,9 @@ receipt blocks a repeat of the same plan. Timeouts are never retried automatical
 Receipts must be retained between runs. GitHub's receipt cache is best-effort
 and can expire; it is not a server-side idempotency guarantee.
 
-The workflow still accepts `repository_dispatch: export_orders`, but dispatches
-now preview only. Manual workflow runs can explicitly select `send_email`.
+The workflow accepts `repository_dispatch: export_orders` and requests the report
+email by default. Manual workflow runs also default `send_email` to true; untick
+the checkbox for a preview. The command-line runner still requires `--send-email`.
 Before use, configure GitHub secrets `GOMAMAM_EMAIL`, `GOMAMAM_PASSWORD`, and
 the variable `GOMAMAM_MERCHANT`. Configuration is not performed by this code.
 No authenticated state, report workbook, or customer data is uploaded as an artifact.

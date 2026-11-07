@@ -16,7 +16,7 @@ on:
       send_email:
         description: 'Request the actual report email from GoMamam'
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: gomamam-settlement-export
@@ -55,7 +55,7 @@ jobs:
           GOMAMAM_MERCHANT: ${{ vars.GOMAMAM_MERCHANT }}
           RANGE_FROM: ${{ inputs.from }}
           RANGE_TO: ${{ inputs.to }}
-          SEND_EMAIL: ${{ github.event_name == 'workflow_dispatch' && inputs.send_email }}
+          SEND_EMAIL: ${{ github.event_name != 'workflow_dispatch' || inputs.send_email }}
         run: |
           args=(--merchant "$GOMAMAM_MERCHANT")
           if [[ -n "$RANGE_FROM" || -n "$RANGE_TO" ]]; then
